@@ -5,11 +5,11 @@ class Config:
 
 
 class Settings:
-    # test
     XRAY_HOST = ''
     XRAY_CLIENT_ID = ''
     XRAY_CLIENT_SECRET = ''
     XRAY_PLAN_KEY = ''
+    XRAY_EXEC_KEY = ''
     XRAY_FAIL_SILENTLY = False
     XRAY_TOKEN = ''
     JIRA_HOST = ''
@@ -26,5 +26,6 @@ class Stats:
 
 
 class TestExecutionResult:
-    xray_keys = {}
+    xray_results = {}
+    xray_evidences = {}
     functions = {}

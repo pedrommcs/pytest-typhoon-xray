@@ -37,34 +37,11 @@ def send_test_results(test_results):
     return output
 
 
-def add_remote_link(issue_id, remote_link, title,
-                    icon_url='http://allure.qatools.ru/img/favicon.ico'):
-    req = {
-        'object': {
-            'url': remote_link,
-            'title': title,
-            'icon': {
-                'url16x16': icon_url,
-                'title': 'Report details'
-            }
-        }
-    }
-    r = requests.post(
-        f'{Settings.JIRA_HOST}/rest/api/2/issue/{issue_id}/remotelink',
-        auth=Settings.JIRA_AUTH, json=req)
-    if r.status_code != 200 and not Settings.XRAY_FAIL_SILENTLY:
-        raise JiraError
-    output = r.json()
-    return output
-
-
-def make_initial_test_result(
-        start_time=datetime.now(),
-        end_time=datetime.now(),
-        summary=f'Execution of plan {Settings.XRAY_PLAN_KEY}'):
+def make_initial_test_result(start_time=datetime.now(), end_time=datetime.now()):
     return {
+        'testExecutionKey': Settings.XRAY_EXEC_KEY,
         'info': {
-            'summary': summary,
+            'description': 'This execution is automatically filled when running pytest.',
             'startDate': to_xray_timestamp(start_time),
             'finishDate': to_xray_timestamp(end_time),
             'testPlanKey': Settings.XRAY_PLAN_KEY,
