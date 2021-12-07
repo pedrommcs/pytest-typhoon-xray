@@ -5,6 +5,7 @@ class Config:
 
 
 class Settings:
+    # test
     XRAY_HOST = ''
     XRAY_CLIENT_ID = ''
     XRAY_CLIENT_SECRET = ''
