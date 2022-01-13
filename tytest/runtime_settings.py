@@ -18,6 +18,7 @@ class Settings:
     JIRA_AUTH = []
     RUN_CONFIG = ''
     WEB_URL = ''
+    VERBOSE = False
 
 
 class Stats:

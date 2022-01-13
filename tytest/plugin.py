@@ -29,9 +29,15 @@ def pytest_addoption(parser):
         dest='xray_exec_key',
         help='Xray test execution key')
     group.addoption(
+        '--use_verbose',
+        dest='use_verbose',
+        action='store_true',
+        help='verbose stuff'
+    )
+    group.addoption(
         '--xray-fail-silently',
         dest='xray_fail_silently',
-        default='False',
+        default=False,
         help='Ignore Xray communication errors')
     group.addoption(
         '--web-url',
@@ -61,6 +67,9 @@ def xray_exec_key(request):
 def xray_fail_silently(request):
     return request.config.option.xray_fail_silently
 
+@pytest.fixture
+def use_verbose(request):
+    return request.config.option.use_verbose
 
 @pytest.fixture
 def web_url(request):
@@ -94,6 +103,7 @@ def pytest_configure(config):
     Settings.XRAY_EXEC_KEY = config.getoption('xray_exec_key')
     Settings.XRAY_FAIL_SILENTLY = bool(config.getoption('xray_fail_silently'))
     Settings.WEB_URL = config.getoption('web_url')
+    Settings.VERBOSE = config.getoption('use_verbose')
 
     # initialize secret params
     secrets = config.getoption('secrets')
@@ -118,6 +128,13 @@ def pytest_collection_modifyitems(config, items):
 def pytest_assertion_pass(item, lineno, orig, expl):
     xray_key = TestExecutionResult.functions[item.nodeid]
     explanation = [orig, expl]
+
+    if Settings.VERBOSE:
+        print("")
+        print(f"Original assertion: {orig}")
+        print(f"Assert explanation: {expl} \n")
+        #print(f"Assert explanation: {expl.splitlines()[0]} \n")
+
     try:
         TestExecutionResult.xray_evidences[xray_key].append(explanation)
     except KeyError:
@@ -126,8 +143,12 @@ def pytest_assertion_pass(item, lineno, orig, expl):
 
 def pytest_terminal_summary(terminalreporter):
 
+    if not Settings.XRAY_PLAN_KEY:
+        return
+
     Stats.END_TIME = datetime.now()
     result = make_initial_test_result(start_time=Stats.START_TIME, end_time=Stats.END_TIME)
+    
     _fill_keys(terminalreporter.stats, 'passed')
     _fill_keys(terminalreporter.stats, 'failed')
     _fill_keys(terminalreporter.stats, 'skipped')
@@ -156,12 +177,14 @@ def pytest_terminal_summary(terminalreporter):
         evidences = TestExecutionResult.xray_evidences[key]
         for original_assert, explained_assert in evidences:
             original = f"Original assertion: {original_assert}"
-            explanation = f"Assert explanation: {explained_assert.splitlines()[0]}"
+            #explanation = f"Assert explanation: {explained_assert.splitlines()[0]}"
+            explained_assert = explained_assert.replace("'", "")
+            explanation = f"Assert explanation: {explained_assert}"
             comment = original + "\n" + explanation + "\n"
             test['comment'] += comment
 
         result['tests'].append(test)
-
+    
     new_issue = send_test_results(result)
 
 
@@ -186,11 +209,10 @@ def _get_xray_marker(item):
 
 
 def _store_item(item):
+    TestExecutionResult.functions[item.nodeid] = 'Fake-Key'
     marker = _get_xray_marker(item)
-    if not marker:
-        return
-    test_key = marker.kwargs['test_key']
-    TestExecutionResult.functions[item.nodeid] = test_key
+    if marker:
+        TestExecutionResult.functions[item.nodeid] = marker.kwargs['test_key']
 
 
 def _stat(type, counter, total):
